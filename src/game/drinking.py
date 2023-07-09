@@ -123,24 +123,65 @@ class Game:
         for mode in self.modes:
             pos += 50
             Window.Button(self.window, text=mode.__name__,
-                          command=lambda: self.active_modes.append(mode)).place(x=700, y=pos)
+                          command=lambda mode=mode: self._add_mode(mode)).place(x=700, y=pos)
 
         # Removing a mode
-        Window.Label(self.window, text="REMOVE MODE").place(x=760, y=80)
+        Window.Label(self.window, text="REMOVE MODE").place(x=850, y=80)
 
         pos = 80
         for mode in self.modes:
             pos += 50
             Window.Button(self.window, text=mode.__name__,
-                          command=lambda: self._remove_mode(mode)).place(x=760, y=pos)
+                          command=lambda mode=mode: self._remove_mode(mode)).place(x=850, y=pos)
+
+        # Active modes
+        Window.Label(self.window, text="ACTIVE MODES:").place(x=1000, y=80)
+
+        pos = 110
+        self.active_labels = []
+        for mode in self.active_modes:
+            pos += 20
+            label = Window.Label(self.window, text=mode.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
 
         self.window.mainloop()
 
+    def _add_mode(self, mode):
+        """Adds a game mode."""
+
+        self.active_modes.append(mode)
+
+        for label in self.active_labels:
+            label.destroy()
+
+        pos = 110
+        self.active_labels = []
+        for game in self.active_modes:
+            pos += 20
+            label = Window.Label(self.window, text=game.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
+
     def _remove_mode(self, mode):
-        """Adds a new game mode."""
+        """Removes a game mode."""
 
         while mode in self.active_modes:
             self.active_modes.remove(mode)
+
+        for label in self.active_labels:
+            label.destroy()
+
+        pos = 110
+        self.active_labels = []
+        for game in self.active_modes:
+            pos += 20
+            label = Window.Label(self.window, text=game.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
 
     def _start_game(self):
         """Starts the game."""
