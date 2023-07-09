@@ -125,7 +125,6 @@ class Game:
                        self.slap_the_mini])()
 
         wait = random.randint(self.wait_time[0], self.wait_time[1])
-
         self.window.after(wait, self._game_loop)
 
     def drink_bitch(self):
