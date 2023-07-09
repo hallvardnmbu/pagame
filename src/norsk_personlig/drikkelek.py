@@ -41,19 +41,22 @@ class Drikkelek:
         self._knapp = None
 
         self.kategorier = []
-        with open('tekstfiler/kategorier.txt', 'r', encoding='utf-8') as file:
+        with open('../src/norsk_personlig/tekstfiler/kategorier.txt', 'r',
+                  encoding='utf-8') as file:
             for line in file:
                 line = line.strip()
                 self.kategorier.append(line)
 
         self.mest_sannsynlig_til = []
-        with open('tekstfiler/sannsynlig_til.txt', 'r', encoding='utf-8') as file:
+        with open('../src/norsk_personlig/tekstfiler/sannsynlig_til.txt', 'r',
+                  encoding='utf-8') as file:
             for line in file:
                 line = line.strip()
                 self.mest_sannsynlig_til.append(line)
 
         self.sangtekster = []
-        with open('tekstfiler/sangtekster.txt', 'r', encoding='utf-8') as file:
+        with open('../src/norsk_personlig/tekstfiler/sangtekster.txt', 'r',
+                  encoding='utf-8') as file:
             for line in file:
                 info, tekst = line.split(" [] ")
                 artist, sang = info.split(", ")
@@ -70,13 +73,16 @@ class Drikkelek:
                                                                                             y=0)
 
         # Pause Button
-        Vindu.Button(self.vindu, text='PAUSE MUSIKK', command=lambda: self.Lyd.pause_music()).place(x=0, y=80)
+        Vindu.Button(self.vindu, text='PAUSE MUSIKK',
+                     command=lambda: self.Lyd.pause_music()).place(x=0, y=80)
 
         # Play Button
-        Vindu.Button(self.vindu, text='SPILL MUSIKK', command=lambda: self.Lyd.unpause_music()).place(x=150, y=80)
+        Vindu.Button(self.vindu, text='SPILL MUSIKK',
+                     command=lambda: self.Lyd.unpause_music()).place(x=150, y=80)
 
         # Play Button
-        Vindu.Button(self.vindu, text='SKIP SANG', command=lambda: self.Lyd.skip_music()).place(x=300, y=80)
+        Vindu.Button(self.vindu, text='SKIP SANG',
+                     command=lambda: self.Lyd.skip_music()).place(x=300, y=80)
 
         # Players
         Vindu.Label(self.vindu, text='Deltakere:', font=('Helvetica', 30)).place(x=0, y=160)
@@ -85,11 +91,11 @@ class Drikkelek:
         for player in self.deltakere:
             Vindu.Label(self.vindu, text=f" >  {player}",
                         font=('Helvetica', 16)).place(x=0, y=player_lable_distance)
-            player_lable_distance += 20
+            player_lable_distance += 30
 
         # Starting the game
-        Vindu.Button(self.vindu, text='START', command=lambda: self._start_game(),
-                     fg='Green').place(x=500, y=80)
+        Vindu.Button(self.vindu, text='START',
+                     command=lambda: self._start_game(), fg='Green').place(x=500, y=80)
 
         self.vindu.mainloop()
 

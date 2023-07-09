@@ -41,19 +41,19 @@ class Game:
         self._button = None
 
         self.categories = []
-        with open("textfiles/categories.txt", "r", encoding="utf-8") as file:
+        with open("../src/game/textfiles/categories.txt", "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
                 self.categories.append(line)
 
         self.most_likely_to = []
-        with open("textfiles/likely_to.txt", "r", encoding="utf-8") as file:
+        with open("../src/game/textfiles/likely_to.txt", "r", encoding="utf-8") as file:
             for line in file:
                 line = line.strip()
                 self.most_likely_to.append(line)
 
         self.lyrics = []
-        with open("textfiles/lyrics.txt", "r", encoding="utf-8") as file:
+        with open("../src/game/textfiles/lyrics.txt", "r", encoding="utf-8") as file:
             for line in file:
                 info, text = line.split(" [] ")
                 artist, song = info.split(", ")
@@ -69,13 +69,16 @@ class Game:
         Window.Label(self.window, text="Drinking game", font=("Helvetica bold", 40)).place(x=0, y=0)
 
         # Pause Button
-        Window.Button(self.window, text="PAUSE MUSIC", command=lambda: self.Sound.pause_music()).place(x=0, y=80)
+        Window.Button(self.window, text="PAUSE MUSIC",
+                      command=lambda: self.Sound.pause_music()).place(x=0, y=80)
 
         # Play Button
-        Window.Button(self.window, text="UNPAUSE MUSIC", command=lambda: self.Sound.unpause_music()).place(x=150, y=80)
+        Window.Button(self.window, text="UNPAUSE MUSIC",
+                      command=lambda: self.Sound.unpause_music()).place(x=150, y=80)
 
         # Play Button
-        Window.Button(self.window, text="SKIP SONG", command=lambda: self.Sound.skip_music()).place(x=300, y=80)
+        Window.Button(self.window, text="SKIP SONG",
+                      command=lambda: self.Sound.skip_music()).place(x=300, y=80)
 
         # Players
         Window.Label(self.window, text="Contestants:", font=("Helvetica", 30)).place(x=0, y=160)
@@ -87,8 +90,8 @@ class Game:
             player_position += 30
 
         # Starting the game
-        Window.Button(self.window, text="START", command=lambda: self._start_game(),
-                      fg="Green").place(x=500, y=80)
+        Window.Button(self.window, text="START",
+                      command=lambda: self._start_game(), fg="Green").place(x=500, y=80)
 
         self.window.mainloop()
 
@@ -97,11 +100,8 @@ class Game:
 
         self.Sound.pause_music()
 
-        self.Sound.read("Welcome to the drinking!")
-
-        self.Sound.read("The contestants today are")
+        self.Sound.read("Welcome to the drinking")
         self.Sound.read(", ".join(self.contestants))
-
         self.Sound.read("Let the games begin!")
 
         self.Sound.unpause_music()
@@ -150,9 +150,9 @@ class Game:
         self.Sound.read("Welcome to the music quiz.")
         self.Sound.read("I am going to play three songs for you.")
         self.Sound.read("The first person to shout out the name of the song or the artist wins")
-        self.Sound.read("and may hand out two to three drinks.")
+        self.Sound.read("and may hand out one to two drinks.")
 
-        # Something wrong with this:
+        # Sometimes the ID doesn't match the artist and name:
 
         songs = self.Sound.music.playlist_tracks("2sbw07iogIXbWpmOz0U66W")["items"]
         random.shuffle(songs)
@@ -191,7 +191,6 @@ class Game:
         self.Sound.read(f"If you got all correct, you can comfort yourself by {action}.")
 
         self.Sound.skip_music()
-        self.Sound.unpause_music()
 
     def _pass(self):
         """Continues the game."""
