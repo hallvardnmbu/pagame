@@ -6,7 +6,7 @@ import random
 import time
 
 
-class Drikkelek:
+class Lek:
     def __init__(self,
                  wait_time,
                  playlist,

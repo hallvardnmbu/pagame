@@ -1,4 +1,4 @@
-Drinking game.
+Party game.
 
 See examples/example_game.py
 

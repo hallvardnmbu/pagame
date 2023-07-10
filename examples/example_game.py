@@ -1,4 +1,4 @@
-from src.game.drinking import Game
+from src.party.game import Game
 
 
 """
@@ -20,7 +20,7 @@ _REDIRECT_URI : Spotify-URI for the redirect-page.
 _WAIT_TIME = (2, 5)
 _VOLUME = 70
 
-_SOUND_DIR = "../src/game/sounds/"
+_SOUND_DIR = "../src/party/sounds/"
 _PLAYLIST = "spotify:playlist:6TutgaHFfkThmrrobwA2y9"
 
 _SPOTIFY_CLIENT_ID = "YOUR CLIENT ID"

@@ -1,4 +1,4 @@
-from src.norsk_personlig.drikkelek import Drikkelek
+from src.norsk_personlig.lek import Lek
 
 
 """
@@ -27,8 +27,8 @@ _SPOTIFY_CLIENT_ID = "YOUR CLIENT ID"
 _SPOTIFY_CLIENT_SECRET = "YOUR CLIENT SECRET"
 _REDIRECT_URI = "http://localhost:3000/callback"
 
-Drikkelek(wait_time=_WAIT_TIME,
-          playlist=_PLAYLIST,
-          directory=_SOUND_DIR,
-          music=(_SPOTIFY_CLIENT_ID, _SPOTIFY_CLIENT_SECRET, _REDIRECT_URI),
-          volume=_VOLUME)
+Lek(wait_time=_WAIT_TIME,
+    playlist=_PLAYLIST,
+    directory=_SOUND_DIR,
+    music=(_SPOTIFY_CLIENT_ID, _SPOTIFY_CLIENT_SECRET, _REDIRECT_URI),
+    volume=_VOLUME)
