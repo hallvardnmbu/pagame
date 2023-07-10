@@ -31,6 +31,29 @@ class Lek:
         """
 
         self.Lyd = Uro(playlist, directory, music, volume)
+        self.modes = [self.musikk_quiz,
+                      self.drink_bitch,
+                      self.kategorileken,
+                      self.mest_sannsynlig,
+                      self.waterfall,
+                      self.lyric_masteren,
+                      self.siste_som,
+                      self.beste_grimase,
+                      self.mime,
+                      self.tommelkrig,
+                      self.capture_the_mini]
+        self.active_modes = [self.musikk_quiz,
+                             self.musikk_quiz,
+                             self.drink_bitch,
+                             self.kategorileken,
+                             self.mest_sannsynlig,
+                             self.waterfall,
+                             self.lyric_masteren,
+                             self.siste_som,
+                             self.beste_grimase,
+                             self.mime,
+                             self.tommelkrig,
+                             self.capture_the_mini]
 
         if type(wait_time) != tuple:
             wait_time = (wait_time, wait_time)
@@ -97,6 +120,73 @@ class Lek:
         Vindu.Button(self.vindu, text='START',
                      command=lambda: self._start_game(), fg='Green').place(x=500, y=80)
 
+        # Adding a new mode
+        Vindu.Label(self.vindu, text="LEGG TIL").place(x=700, y=80)
+
+        pos = 80
+        for mode in self.modes:
+            pos += 50
+            Vindu.Button(self.vindu, text=mode.__name__,
+                          command=lambda mode=mode: self._add_mode(mode)).place(x=700, y=pos)
+
+        # Removing a mode
+        Vindu.Label(self.vindu, text="FJERN").place(x=850, y=80)
+
+        pos = 80
+        for mode in self.modes:
+            pos += 50
+            Vindu.Button(self.vindu, text=mode.__name__,
+                          command=lambda mode=mode: self._remove_mode(mode)).place(x=850, y=pos)
+
+        # Active modes
+        Vindu.Label(self.vindu, text="AKTIVE:").place(x=1000, y=80)
+
+        pos = 110
+        self.active_labels = []
+        for mode in self.active_modes:
+            pos += 20
+            label = Vindu.Label(self.vindu, text=mode.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
+
+        self.vindu.mainloop()
+
+    def _add_mode(self, mode):
+        """Adds a game mode."""
+
+        self.active_modes.append(mode)
+
+        for label in self.active_labels:
+            label.destroy()
+
+        pos = 110
+        self.active_labels = []
+        for game in self.active_modes:
+            pos += 20
+            label = Vindu.Label(self.vindu, text=game.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
+
+    def _remove_mode(self, mode):
+        """Removes a game mode."""
+
+        while mode in self.active_modes:
+            self.active_modes.remove(mode)
+
+        for label in self.active_labels:
+            label.destroy()
+
+        pos = 110
+        self.active_labels = []
+        for game in self.active_modes:
+            pos += 20
+            label = Vindu.Label(self.vindu, text=game.__name__,
+                                 font=("Helvetica", 10))
+            label.place(x=1000, y=pos)
+            self.active_labels.append(label)
+
         self.vindu.mainloop()
 
     def _start_game(self):
@@ -118,24 +208,7 @@ class Lek:
     def _game_loop(self):
         """The game loop."""
 
-        random.choice([self.drink_bitch,
-                       self.musikk_quiz,
-                       self.musikk_quiz,
-                       self.musikk_quiz,
-                       self.kategorileken,
-                       self.mest_sannsynlig,
-                       self.waterfall,
-                       self.lyric_masteren,
-                       self.siste_som,
-                       self.beste_grimase,
-                       self.bygge_bokser,
-                       self.karin_henter,
-                       self.karin_henter,
-                       self.karin_henter,
-                       self.mime,
-                       self.tommelkrig,
-                       self.andreas_round,
-                       self.capture_the_mini])()
+        random.choice(self.active_modes)()
 
         vent = random.randint(self.wait_time[0], self.wait_time[1])
         self.vindu.after(vent, self._game_loop)
