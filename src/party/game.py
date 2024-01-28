@@ -1,68 +1,38 @@
-from .contestants import Contestants
+from .contestants import Contestants, BUTTON_SIZE
 from .sound import Noise
 
-import tkinter as Window
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton,
+                             QLabel, QWidget, QListWidget)
+from PyQt5.QtCore import QTimer
+from functools import partial
 import random
 import time
 
 
-class Game:
-    def __init__(self,
-                 wait_time,
-                 playlist,
-                 directory,
-                 music,
-                 volume):
-        """
-        Main class.
-        
-        Parameters
-        ----------
-        wait_time : int or tuple
-            Minutes between each game.
-        playlist : str
-            Spotify-URI for the playlist.
-        directory : str
-            Folder to place and play the sound files.
-        music : tuple
-            Spotify Client ID, Spotify Client Secret and Spotify-URI for the redirect-page.
-        volume : int
-            Volume of the music (percentage, 0-100).
-        """
+class Game(QMainWindow):
+    def __init__(self, delay, music):
+        self.app = QApplication([])
+        super().__init__()
 
-        self.Sound = Noise(playlist, directory, music, volume)
-        self.modes = [self.music_quiz,
-                      self.drink_bitch,
-                      self.categories,
-                      self.most_likely,
-                      self.waterfall,
-                      self.lyrical_master,
-                      self.last_to,
-                      self.grimace,
-                      self.mime,
-                      self.thumb_war,
-                      self.slap_the_mini]
-        self.active_modes = [self.music_quiz,
-                             self.music_quiz,
-                             self.drink_bitch,
-                             self.categories,
-                             self.most_likely,
-                             self.waterfall,
-                             self.lyrical_master,
-                             self.last_to,
-                             self.grimace,
-                             self.mime,
-                             self.thumb_war,
-                             self.slap_the_mini]
+        self.Sound = Noise(**music)
+        self.Contestants = Contestants()
 
-        if type(wait_time) != tuple:
-            wait_time = (wait_time, wait_time)
-        self.wait_time = (wait_time[0] * 60000, wait_time[1] * 60000)
-        self.directory = directory
+        self.modes = {
+            getattr(self, mode).__name__.replace("_", " ").title(): getattr(self, mode)
+            for mode in set(dir(self)) - set(dir(QMainWindow))
+            if not mode.startswith("_") and callable(getattr(self, mode))
+        }
 
-        self._continue = None
-        self._button = None
+        self.delay = tuple(int(i * 60000)
+                           for i in (delay if isinstance(delay, tuple) else (delay, delay)))
 
+        self._textfiles()
+        self._graphics()
+
+        self.show()
+        self.app.exec_()
+
+    def _textfiles(self):
         self.categories = []
         with open("../src/party/textfiles/categories.txt", "r", encoding="utf-8") as file:
             for line in file:
@@ -82,114 +52,116 @@ class Game:
                 artist, song = info.split(", ")
                 self.lyrics.append((artist, song, text))
 
-        # Add players
-        start = Contestants()
-        self.contestants = start.contestants
+    def _graphics(self):
+        self.setGeometry(0, 0, 720, 540)
 
-        # Main window
-        self.window = Window.Tk()
-        self.window.geometry("1920x720+0+0")
-        Window.Label(self.window, text="Drinking game", font=("Helvetica bold", 40)).place(x=0, y=0)
+        central = QWidget()
+        self.setCentralWidget(central)
+        self.setWindowTitle("P4R7Y T13M!")
 
-        # Pause Button
-        Window.Button(self.window, text="PAUSE MUSIC",
-                      command=lambda: self.Sound.pause_music()).place(x=0, y=80)
+        self.layout = QVBoxLayout()
+        central.setLayout(self.layout)
 
-        # Play Button
-        Window.Button(self.window, text="UNPAUSE MUSIC",
-                      command=lambda: self.Sound.unpause_music()).place(x=150, y=80)
+        self.__top()
+        self.__bottom()
 
-        # Play Button
-        Window.Button(self.window, text="SKIP SONG",
-                      command=lambda: self.Sound.skip_music()).place(x=300, y=80)
+    def __top(self):
 
-        # Players
-        Window.Label(self.window, text="Contestants:", font=("Helvetica", 30)).place(x=0, y=160)
+        top = QHBoxLayout()
 
-        player_position = 200
-        for player in self.contestants:
-            Window.Label(self.window, text=f" >  {player}",
-                         font=("Helvetica", 16)).place(x=0, y=player_position)
-            player_position += 30
+        # ---
 
-        # Starting the game
-        Window.Button(self.window, text="START",
-                      command=lambda: self._start_game(), fg="Green").place(x=500, y=80)
+        controls = QHBoxLayout()
 
-        # Adding a new mode
-        Window.Label(self.window, text="ADD MODE").place(x=700, y=80)
+        pause = QPushButton("PAUSE")
+        pause.setFixedHeight(BUTTON_SIZE)
+        pause.setStyleSheet("background-color: #FBFAF5;")
+        pause.clicked.connect(self.Sound.pause_music)
+        controls.addWidget(pause)
 
-        pos = 80
+        play = QPushButton("PLAY")
+        play.setFixedHeight(BUTTON_SIZE)
+        play.setStyleSheet("background-color: #FBFAF5;")
+        play.clicked.connect(self.Sound.unpause_music)
+        controls.addWidget(play)
+
+        skip = QPushButton("SKIP")
+        skip.setFixedHeight(BUTTON_SIZE)
+        skip.setStyleSheet("background-color: #FBFAF5;")
+        skip.clicked.connect(self.Sound.skip_music)
+        controls.addWidget(skip)
+
+        top.addLayout(controls)
+
+        # ---
+
+        top.addWidget(self.Contestants)
+
+        # ---
+
+        self.button = QPushButton("START")
+        self.button.setFixedHeight(BUTTON_SIZE)
+        self.button.setStyleSheet("background-color: #FBFAF5;")
+        self.button.clicked.connect(self._start_game)
+
+        top.addWidget(self.button)
+
+        # ---
+
+        self.layout.addLayout(top)
+
+    def __bottom(self):
+
+        bottom = QHBoxLayout()
+
+        # ---
+
+        adding = QVBoxLayout()
+
+        adding.addWidget(QLabel("ADD MODE"))
+
         for mode in self.modes:
-            pos += 50
-            Window.Button(self.window, text=mode.__name__,
-                          command=lambda mode=mode: self._add_mode(mode)).place(x=700, y=pos)
+            add = QPushButton(mode)
+            add.clicked.connect(partial(self._add_mode, mode))
+            adding.addWidget(add)
 
-        # Removing a mode
-        Window.Label(self.window, text="REMOVE MODE").place(x=850, y=80)
+        bottom.addLayout(adding)
 
-        pos = 80
+        # ---
+
+        activated = QVBoxLayout()
+
+        activated.addWidget(QLabel("ACTIVE MODES"))
+
+        self.activated = QListWidget()
+        self.activated.itemClicked.connect(self._remove_mode)
         for mode in self.modes:
-            pos += 50
-            Window.Button(self.window, text=mode.__name__,
-                          command=lambda mode=mode: self._remove_mode(mode)).place(x=850, y=pos)
+            self.activated.addItem(mode)
+        activated.addWidget(self.activated)
 
-        # Active modes
-        Window.Label(self.window, text="ACTIVE MODES:").place(x=1000, y=80)
+        bottom.addLayout(activated)
 
-        pos = 110
-        self.active_labels = []
-        for mode in self.active_modes:
-            pos += 20
-            label = Window.Label(self.window, text=mode.__name__,
-                                 font=("Helvetica", 10))
-            label.place(x=1000, y=pos)
-            self.active_labels.append(label)
+        # ---
 
-        self.window.mainloop()
+        self.layout.addLayout(bottom)
 
     def _add_mode(self, mode):
         """Adds a game mode."""
-
-        self.active_modes.append(mode)
-
-        for label in self.active_labels:
-            label.destroy()
-
-        pos = 110
-        self.active_labels = []
-        for game in self.active_modes:
-            pos += 20
-            label = Window.Label(self.window, text=game.__name__,
-                                 font=("Helvetica", 10))
-            label.place(x=1000, y=pos)
-            self.active_labels.append(label)
+        self.activated.addItem(mode)
 
     def _remove_mode(self, mode):
-        """Adds a new game mode."""
-
-        while mode in self.active_modes:
-            self.active_modes.remove(mode)
-
-        for label in self.active_labels:
-            label.destroy()
-
-        pos = 110
-        self.active_labels = []
-        for game in self.active_modes:
-            pos += 20
-            label = Window.Label(self.window, text=game.__name__,
-                                 font=("Helvetica", 10))
-            label.place(x=1000, y=pos)
-            self.active_labels.append(label)
+        """Renmoves a game mode."""
+        if self.activated.row(mode) != -1:
+            self.activated.takeItem(self.activated.row(mode))
 
     def _start_game(self):
         """Starts the game."""
+        self.button.hide()
 
         self.Sound.pause_music()
 
         self.Sound.read("Welcome to the drinking")
-        self.Sound.read(", ".join(self.contestants))
+        self.Sound.read(", ".join(self.Contestants.contestants))
         self.Sound.read("Let the games begin!")
 
         self.Sound.unpause_music()
@@ -198,16 +170,15 @@ class Game:
 
     def _game_loop(self):
         """The game loop."""
+        index = random.randint(0, self.activated.count() - 1)
+        self.modes[self.activated.item(index).text()]()
 
-        random.choice(self.active_modes)()
-
-        wait = random.randint(self.wait_time[0], self.wait_time[1])
-        self.window.after(wait, self._game_loop)
+        wait = random.randint(self.delay[0], self.delay[1])
+        QTimer.singleShot(wait, self._game_loop)
 
     def drink_bitch(self):
         """Drink bitch game mode."""
-
-        the_bitch = random.choice(self.contestants)
+        the_bitch = random.choice(self.Contestants.contestants)
 
         self.Sound.pause_music()
 
@@ -221,7 +192,6 @@ class Game:
 
     def music_quiz(self):
         """Music quiz game mode."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Welcome to the music quiz.")
@@ -271,18 +241,15 @@ class Game:
 
     def _pass(self):
         """Continues the game."""
-
         self._continue = True
-        self._button.destroy() if self._button else None
-        self.window.update()
+        self.button.hide()
 
     def categories(self):
         """Category game mode."""
-
         self.Sound.pause_music()
 
         category = random.choice(self.categories)
-        starting = random.choice(self.contestants)
+        starting = random.choice(self.Contestants.contestants)
 
         self.Sound.read("This is the category game.")
         self.Sound.read("Say something within the category until someone fails.")
@@ -292,10 +259,12 @@ class Game:
         self.Sound.read(f"{category}, and {starting} is starting.")
 
         self._continue = False
-        self._button = Window.Button(self.window, text="CONTINUE", command=self._pass)
-        self._button.place(x=800, y=80)
+        self.button.setText("CONTINUE")
+        self.button.clicked.connect(self._pass)
+        self.button.show()
+
         while not self._continue:
-            self.window.update()
+            continue
 
         time.sleep(1)
 
@@ -312,7 +281,6 @@ class Game:
 
     def most_likely(self):
         """Most likely to game mode."""
-
         self.Sound.pause_music()
         self.Sound.read("Shut up! This is the most likely-game.")
         self.Sound.read("I will read a statement plus name, and you will decide if it is true.")
@@ -320,7 +288,7 @@ class Game:
         self.Sound.read("If the majority says it is false, the person can give out 3 drinks.")
 
         for i in range(3):
-            person = random.choice(self.contestants)
+            person = random.choice(self.Contestants.contestants)
             action = random.choice(self.most_likely_to)
 
             self.Sound.read(f"{person} is the most likely to {action}")
@@ -331,12 +299,11 @@ class Game:
 
     def waterfall(self):
         """Waterfall game mode."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Shut your mouth and pay attention. The next game is waterfall.")
 
-        person = random.choice(self.contestants)
+        person = random.choice(self.Contestants.contestants)
         self.Sound.read(f"{person} starts and decides the direction.")
 
         time.sleep(2)
@@ -345,7 +312,6 @@ class Game:
 
     def lyrical_master(self):
         """Lyric master game mode."""
-
         self.Sound.pause_music()
         self.Sound.read("Welcome to the lyrical master.")
         self.Sound.read("I will read some lyrics and you must guess the song.")
@@ -370,7 +336,6 @@ class Game:
 
     def last_to(self):
         """Last person to game."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Last person to")
@@ -395,7 +360,6 @@ class Game:
 
     def grimace(self):
         """Best grimace game."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Everyone make a grimace!")
@@ -420,7 +384,6 @@ class Game:
 
     def build(self):
         """Building game."""
-
         self.Sound.pause_music()
 
         self.Sound.read("The person to build the highest tower of HIS OWN empty cans wins.")
@@ -456,14 +419,16 @@ class Game:
 
         self.Sound.read("One person at a time must try and throw snacks into their mouth.")
         self.Sound.read("The first person to manage it wins.")
-        self.Sound.read(f"{random.choice(self.contestants)} starts.")
+        self.Sound.read(f"{random.choice(self.Contestants.contestants)} starts.")
         self.Sound.read("Click to continue")
 
         self._continue = False
-        self._button = Window.Button(self.window, text="CONTINUE", command=self._pass)
-        self._button.place(x=800, y=80)
+        self.button.setText("CONTINUE")
+        self.button.clicked.connect(self._pass)
+        self.button.show()
+
         while not self._continue:
-            self.window.update()
+            continue
 
         action = random.choice(["drink 3 sips.",
                                 "drink 2 sips.",
@@ -481,7 +446,6 @@ class Game:
 
     def mime(self):
         """Mime game."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Miming game! Think of what you are going to mime!")
@@ -489,7 +453,7 @@ class Game:
         time.sleep(5)
 
         delay = random.choice([5, 10, 12, 15, 17, 20])
-        self.Sound.read(f"{random.choice(self.contestants)} is miming and has {delay} seconds.")
+        self.Sound.read(f"{random.choice(self.Contestants.contestants)} is miming and has {delay} seconds.")
 
         time.sleep(delay)
 
@@ -503,10 +467,9 @@ class Game:
 
     def thumb_war(self):
         """Thumb war game."""
-
         self.Sound.pause_music()
 
-        person_1, person_2 = random.sample(self.contestants, 2)
+        person_1, person_2 = random.sample(self.Contestants.contestants, 2)
 
         self.Sound.read(f"Thumb war between {person_1} and {person_2}!")
 
@@ -527,7 +490,6 @@ class Game:
 
     def slap_the_mini(self):
         """Mini game."""
-
         self.Sound.pause_music()
 
         self.Sound.read("Slap the closest mini!")

@@ -1,48 +1,40 @@
-import tkinter as tk
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QListWidget
 
 
-class Contestants:
+BUTTON_SIZE = 40
+
+
+class Contestants(QWidget):
     def __init__(self):
-        """
-        Object for adding contestants.
-        """
+        super().__init__()
 
-        self.n_contestants = 0
-        self.entry_names = []
         self.contestants = []
 
-        self.window = tk.Tk()
-        self.window.geometry('640x480')
-        self.window.title("Add contestants")
+        layout = QVBoxLayout()
+        self.setLayout(layout)
 
-        self.label_players = tk.Label(self.window, text="Number of contestants:")
-        self.label_players.pack()
-        self.entry_players = tk.Entry(self.window)
-        self.entry_players.pack()
+        layout.addWidget(QLabel("Name:"))
 
-        self.label_names = tk.Label(self.window, text="Name:")
-        self.label_names.pack()
+        self.entry = QLineEdit()
+        layout.addWidget(self.entry)
 
-        self.button_update = tk.Button(self.window, text="Update", command=self._update_names)
-        self.button_update.pack()
+        self.add = QPushButton("Add")
+        self.add.setFixedHeight(BUTTON_SIZE)
+        self.add.setStyleSheet("background-color: #FBFAF5;")
+        self.add.clicked.connect(self._add)
+        layout.addWidget(self.add)
 
-        self.button_submit = tk.Button(self.window, text="Continue", command=self._create_players)
-        self.button_submit.pack()
+        self.names = QListWidget()
+        self.names.itemClicked.connect(self._remove)
+        layout.addWidget(self.names)
 
-        self.window.mainloop()
+    def _add(self):
+        name = self.entry.text()
+        if name:
+            self.names.addItem(name)
+            self.contestants.append(name) if name not in self.contestants else None
+            self.entry.clear()
 
-    def _update_names(self):
-        self.n_contestants = int(self.entry_players.get())
-        for entry in self.entry_names:
-            entry.destroy()
-
-        self.entry_names = []
-        for _ in range(self.n_contestants):
-            entry = tk.Entry(self.window)
-            entry.pack()
-            self.entry_names.append(entry)
-
-    def _create_players(self):
-        for entry in self.entry_names:
-            self.contestants.append(entry.get())
-        self.window.destroy()
+    def _remove(self, item):
+        self.names.takeItem(self.names.row(item))
+        self.contestants.remove(item.text())
