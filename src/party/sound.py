@@ -26,31 +26,38 @@ class Noise:
         self.playlist = playlist
         self.directory = directory if directory[-1] == "/" else f"{directory}/"
 
-        self.music = Spotify(
-            auth_manager=SpotifyOAuth(
-                scope="user-read-playback-state user-modify-playback-state",
-                **spotify
+        try:
+            self.music = Spotify(
+                auth_manager=SpotifyOAuth(
+                    scope="user-read-playback-state user-modify-playback-state",
+                    **spotify
+                )
             )
-        )
-        self.music.volume(VOLUME)
-        self._play_music()
+            self.music.volume(VOLUME)
+            self._play_music()
+        except:  # noqa
+            self.music = None
 
     def _play_music(self):
         """Starts the music."""
-        self.music.start_playback(context_uri=self.playlist)
-        self.music.shuffle(state=True)
+        if self.music and not self.music.current_playback()["is_playing"]:
+            self.music.start_playback(context_uri=self.playlist)
+            self.music.shuffle(state=True)
 
     def pause_music(self):
         """Pause the music."""
-        self.music.pause_playback()
+        if self.music and self.music.current_playback()["is_playing"]:
+            self.music.pause_playback()
 
     def unpause_music(self):
         """Unpause the music."""
-        self.music.start_playback(uris=None)
+        if self.music and not self.music.current_playback()["is_playing"]:
+            self.music.start_playback(uris=None)
 
     def skip_music(self):
         """Skips the current song."""
-        self.music.next_track()
+        if self.music:
+            self.music.next_track()
 
     def read(self, text, language="en"):
         """

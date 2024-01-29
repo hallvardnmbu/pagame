@@ -208,6 +208,16 @@ class Game(QMainWindow):
 
     def _start_game(self):
         """Starts the game."""
+        if len(self.Contestants.contestants) < 2:
+            self.Sound.read("Dude... You can't seriously be trying to play this alone.")
+
+            if self.Sound.music:
+                self.Sound.music.volume(100)
+                self.Sound.music.start_playback(uris=["spotify:track:0nr2FxkTgIwCjDdUC50gPI"])
+                self.Sound.music.repeat("track")
+
+            return
+
         self.button_start.hide()
         self.button_disable.show()
 
