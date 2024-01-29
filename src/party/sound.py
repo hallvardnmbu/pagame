@@ -6,8 +6,11 @@ from spotipy import Spotify
 from spotipy.oauth2 import SpotifyOAuth
 
 
+VOLUME = 75
+
+
 class Noise:
-    def __init__(self, playlist, directory, spotify, volume):
+    def __init__(self, playlist, directory, spotify):
         """
         A class that handles the music and text-to-speech.
 
@@ -19,8 +22,6 @@ class Noise:
             The directory to save (and play from) the mp3 files.
         spotify : dictionary
             The Spotify client id, client secret and redirect uri.
-        volume : int
-            The volume of the music.
         """
         self.playlist = playlist
         self.directory = directory if directory[-1] == "/" else f"{directory}/"
@@ -31,7 +32,7 @@ class Noise:
                 **spotify
             )
         )
-        self.music.volume(volume)  # TODO: Add to GUI
+        self.music.volume(VOLUME)
         self._play_music()
 
     def _play_music(self):

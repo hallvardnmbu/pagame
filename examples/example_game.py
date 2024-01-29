@@ -6,9 +6,6 @@ DELAY : minutes between each game.
     Either an integer or a tuple.
     If a tuple, the game will start at a random time between the two values.
     
-VOLUME : volume of the music.
-    Percentage, 0-100.
-    
 SOUND_DIR : folder to place and play the sound files.
 PLAYLIST : Spotify-URI for the playlist.
 
@@ -18,8 +15,7 @@ REDIRECT_URI : Spotify-URI for the redirect-page.
 """
 
 
-DELAY = 0.2 #(2, 5)
-VOLUME = 70
+DELAY = 0.2  #(2, 5)
 
 SOUND_DIR = "../src/party/sounds/"
 PLAYLIST = "spotify:playlist:6TutgaHFfkThmrrobwA2y9"
@@ -37,7 +33,6 @@ Game(
          "client_id": SPOTIFY_ID,
          "client_secret": SPOTIFY_SECRET,
          "redirect_uri": REDIRECT_URI
-     },
-     "volume": VOLUME
+     }
     }
 )

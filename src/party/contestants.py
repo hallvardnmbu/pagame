@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QPushButton, QLabel, QLineEdit, QListWidget
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLineEdit, QListWidget
 
 
-BUTTON_SIZE = 40
+BUTTON_SIZE = 55
 
 
 class Contestants(QWidget):
@@ -11,22 +11,27 @@ class Contestants(QWidget):
         self.contestants = []
 
         layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        layout.addWidget(QLabel("Name:"))
+        top = QHBoxLayout()
 
         self.entry = QLineEdit()
-        layout.addWidget(self.entry)
+        self.entry.setPlaceholderText("Name")
+        self.entry.setFixedHeight(int(BUTTON_SIZE * 0.5))
+        top.addWidget(self.entry)
+        top.addSpacing(10)
 
-        self.add = QPushButton("Add")
-        self.add.setFixedHeight(BUTTON_SIZE)
-        self.add.setStyleSheet("background-color: #FBFAF5;")
-        self.add.clicked.connect(self._add)
-        layout.addWidget(self.add)
+        add = QPushButton("Include")
+        add.setFixedSize(int(BUTTON_SIZE * 1.5), int(BUTTON_SIZE * 0.5))
+        add.clicked.connect(self._add)
+        top.addWidget(add)
+
+        layout.addLayout(top)
 
         self.names = QListWidget()
+        self.names.setFixedHeight(int(BUTTON_SIZE * 1.5))
         self.names.itemClicked.connect(self._remove)
         layout.addWidget(self.names)
+
+        self.setLayout(layout)
 
     def _add(self):
         name = self.entry.text()
