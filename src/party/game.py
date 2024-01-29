@@ -1,22 +1,29 @@
 from .contestants import Contestants, BUTTON_SIZE
 from .sound import Noise, VOLUME
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QHBoxLayout, QPushButton,
-                             QLabel, QWidget, QListWidget)
-from PyQt5.QtCore import QTimer
-from functools import partial
-import random
 import time
+import random
+from functools import partial
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import (QApplication, QMainWindow,
+                             QLabel, QWidget, QListWidget, QVBoxLayout, QHBoxLayout, QPushButton)
 
 
 class Game(QMainWindow):
+    """The game class controlling everything."""
     def __init__(self, delay, music):
         self.app = QApplication([])
         self.app.setStyleSheet("""
             QPushButton {
                 border: 1px solid gray;
-                outline: none;
                 background-color: #FBFAF5;
+            }
+            QPushButton:hover {
+                background-color: #ECEBE5;
+            }
+            QPushButton:pressed {
+                background-color: #D6D5D1;
             }
         """)
         super().__init__()
@@ -35,13 +42,18 @@ class Game(QMainWindow):
         self.delay = tuple(int(i * 60000)
                            for i in (delay if isinstance(delay, tuple) else (delay, delay)))
 
+        self._continue = None
+        self._timer = None
+
         self._textfiles()
         self._graphics()
 
         self.show()
+        self.setWindowIcon(QIcon("../src/party/icons/icon.png"))
         self.app.exec_()
 
     def _textfiles(self):
+        """Reads the textfiles."""
         self.categories = []
         with open("../src/party/textfiles/categories.txt", "r", encoding="utf-8") as file:
             for line in file:
@@ -62,6 +74,7 @@ class Game(QMainWindow):
                 self.lyrics.append((artist, song, text))
 
     def _graphics(self):
+        """Creates the GUI."""
         self.setGeometry(0, 0, 100, 200)
 
         central = QWidget()
@@ -71,11 +84,11 @@ class Game(QMainWindow):
         self.layout = QVBoxLayout()
         central.setLayout(self.layout)
 
-        self.__top()
-        self.__bottom()
+        self._graphics_top()
+        self._graphics_bottom()
 
-    def __top(self):
-
+    def _graphics_top(self):
+        """Creates the top part of the GUI."""
         top = QHBoxLayout()
 
         left = QWidget()
@@ -83,43 +96,50 @@ class Game(QMainWindow):
         playback = QHBoxLayout()
         feedback = QHBoxLayout()
 
-        pause = QPushButton("PAUSE")
+        pause = QPushButton()
+        pause.setIcon(QIcon("../src/party/icons/pause.png"))
         pause.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         pause.clicked.connect(self.Sound.pause_music)
         playback.addWidget(pause)
 
-        play = QPushButton("PLAY")
+        play = QPushButton()
+        play.setIcon(QIcon("../src/party/icons/play.png"))
         play.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         play.clicked.connect(self.Sound.unpause_music)
         playback.addWidget(play)
 
-        skip = QPushButton("SKIP")
+        skip = QPushButton()
+        skip.setIcon(QIcon("../src/party/icons/skip.png"))
         skip.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         skip.clicked.connect(self.Sound.skip_music)
         playback.addWidget(skip)
 
-        up = QPushButton("UP")
-        up.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
-        up.clicked.connect(self._increase_volume)
-        feedback.addWidget(up)
-
-        down = QPushButton("DOWN")
+        down = QPushButton()
+        down.setIcon(QIcon("../src/party/icons/volume-down.png"))
         down.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         down.clicked.connect(self._decrease_volume)
         feedback.addWidget(down)
+
+        up = QPushButton()
+        up.setIcon(QIcon("../src/party/icons/volume-up.png"))
+        up.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
+        up.clicked.connect(self._increase_volume)
+        feedback.addWidget(up)
 
         self.button_start = QPushButton("START")
         self.button_start.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         self.button_start.clicked.connect(self._start_game)
         feedback.addWidget(self.button_start)
 
-        self.button_continue = QPushButton("CONTINUE")
+        self.button_continue = QPushButton()
+        self.button_continue.setIcon(QIcon("../src/party/icons/continue.png"))
         self.button_continue.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         self.button_continue.clicked.connect(self._pass)
         self.button_continue.hide()
         feedback.addWidget(self.button_continue)
 
-        self.button_disable = QPushButton("DISABLE")
+        self.button_disable = QPushButton()
+        self.button_disable.setIcon(QIcon("../src/party/icons/power.png"))
         self.button_disable.setFixedSize(BUTTON_SIZE, BUTTON_SIZE)
         self.button_disable.clicked.connect(self._disable)
         self.button_disable.hide()
@@ -156,22 +176,12 @@ class Game(QMainWindow):
 
         self.layout.addLayout(top)
 
-    def _increase_volume(self):
-        """Increases the volume."""
-        self.volume = min(self.volume + 5, 100)
-        self.Sound.music.volume(self.volume)
-
-    def _decrease_volume(self):
-        """Decreases the volume."""
-        self.volume = max(self.volume - 5, 0)
-        self.Sound.music.volume(self.volume)
-
-    def __bottom(self):
-
+    def _graphics_bottom(self):
+        """Creates the bottom part of the GUI."""
         bottom = QHBoxLayout()
 
         adding = QVBoxLayout()
-        adding.addWidget(QLabel("Add a game mode"))
+        adding.addWidget(QLabel("Click to add"))
         adding.addSpacing(5)
 
         for mode in self.modes:
@@ -184,7 +194,8 @@ class Game(QMainWindow):
         bottom.addLayout(adding)
 
         activated = QVBoxLayout()
-        activated.addWidget(QLabel("Currently active game modes"))
+        activated.addWidget(QLabel("Currently active game modes "
+                                   "(click to remove)"))
 
         self.activated = QListWidget()
         self.activated.itemClicked.connect(self._remove_mode)
@@ -196,6 +207,16 @@ class Game(QMainWindow):
         bottom.addLayout(activated)
 
         self.layout.addLayout(bottom)
+
+    def _increase_volume(self):
+        """Increases the volume."""
+        self.volume = min(self.volume + 5, 100)
+        self.Sound.music.volume(self.volume)
+
+    def _decrease_volume(self):
+        """Decreases the volume."""
+        self.volume = max(self.volume - 5, 0)
+        self.Sound.music.volume(self.volume)
 
     def _add_mode(self, mode):
         """Adds a game mode."""
@@ -401,7 +422,7 @@ class Game(QMainWindow):
         self.Sound.unpause_music()
 
     def lyrical_master(self):
-        """Lyric master game mode."""
+        """Lyricsmaster game mode."""
         self.Sound.pause_music()
         self.Sound.read("Welcome to the lyrical master.")
         self.Sound.read("I will read some lyrics and you must guess the song.")
@@ -549,7 +570,8 @@ class Game(QMainWindow):
         time.sleep(5)
 
         delay = random.choice([5, 10, 12, 15, 17, 20])
-        self.Sound.read(f"{random.choice(self.Contestants.contestants)} is miming and has {delay} seconds.")
+        self.Sound.read(f"{random.choice(self.Contestants.contestants)} "
+                        f"is miming and has {delay} seconds.")
 
         time.sleep(delay)
 

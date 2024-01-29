@@ -5,6 +5,7 @@ BUTTON_SIZE = 55
 
 
 class Contestants(QWidget):
+    """Widget to add and remove contestants."""
     def __init__(self):
         super().__init__()
 
@@ -34,6 +35,7 @@ class Contestants(QWidget):
         self.setLayout(layout)
 
     def _add(self):
+        """Add contestant."""
         name = self.entry.text()
         if name:
             self.names.addItem(name)
@@ -41,5 +43,6 @@ class Contestants(QWidget):
             self.entry.clear()
 
     def _remove(self, item):
+        """Remove contestant."""
         self.names.takeItem(self.names.row(item))
         self.contestants.remove(item.text())
