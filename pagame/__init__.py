@@ -1,4 +1,4 @@
 __author__ = 'Hallvard Høyland Lavik'
-__version__ = '0.1.1'
+__version__ = '1.0.3'
 
-from .__main__ import play
+from .__main__ import Play
