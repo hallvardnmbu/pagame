@@ -99,18 +99,16 @@ jobs:
           $fileSize = $(du -sm $filePath | cut -f1)
         }
         
-        git lfs untrack $filePath
-        git rm --cached $filePath
+        git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $filePath" --prune-empty --tag-name-filter cat -- --all
+        git for-each-ref --format="%(refname)" refs/original/ | xargs -I {} git update-ref -d {}
+        git gc --prune=now
+        git gc --aggressive --prune=now
+
         if ($fileSize -gt 100) {
           git lfs track $filePath
         }
         git add $filePath
         git commit -m "${{ runner.os }}"
-        
-        git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $filePath" --prune-empty --tag-name-filter cat -- --all
-        git for-each-ref --format="%(refname)" refs/original/ | xargs -I {} git update-ref -d {}
-        git gc --prune=now
-        git gc --aggressive --prune=now
 
         git fetch origin main
         git merge origin/main -m "${{ runner.os }}"
