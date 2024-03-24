@@ -20,8 +20,21 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        fetch-depth: 0
+
+    - name: Check commit messages for 'Build'
+      id: commit-message-check
+      run: |
+        contains_build="$(git log --grep='Build' --format=%B -n 1)"
+        if [ -n "$contains_build" ]; then
+          echo "::set-output name=contains_build::true"
+        else
+          echo "::set-output name=contains_build::false"
+        fi
 
     - name: Create application directory
+      if: steps.commit-message-check.outputs.contains_build == 'true'
       run: |
         if ($env:RUNNER_OS -eq 'Windows') {
           if (Test-Path application\${{ runner.os }}.exe) {
@@ -43,11 +56,13 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
+      if: steps.commit-message-check.outputs.contains_build == 'true'
       run: |
         pip install pyinstaller pillow
         pip install -r requirements.txt
 
     - name: Build executable
+      if: steps.commit-message-check.outputs.contains_build == 'true'
       run: |
         pyinstaller executable.py -F -w -n ${{ runner.os }} --add-data "pagame/lookup/icons/*.png:." --add-data "pagame/lookup/textfiles/*.txt:." --icon "pagame/lookup/icons/icon.ico" --distpath dist -p pagame
         if ($env:RUNNER_OS -eq 'Windows') {
@@ -66,29 +81,42 @@ jobs:
         path: application/
 
     - name: Commit and push executable
+      if: steps.commit-message-check.outputs.contains_build == 'true'
       run: |
         git config --global user.email "action@github.com"
         git config --global user.name "GitHub Action"
         
         if ($env:RUNNER_OS -eq 'Windows') {
-          git lfs track application/${{ runner.os }}.exe
-          git add application/${{ runner.os }}.exe
+          $filePath = "application/${{ runner.os }}.exe"
+          $fileSize = (Get-Item $filePath).length / 1MB
         } elseif ($env:RUNNER_OS -eq 'Linux') {
-          git lfs track application/${{ runner.os }}
-          git add application/${{ runner.os }}
+          $filePath = "application/${{ runner.os }}"
+          $fileSize = $(du -sm $filePath | cut -f1)
         } else {
-          git lfs track application/${{ runner.os }}.app
-          git add application/${{ runner.os }}.app
+          tar -czf application/${{ runner.os }}.tar.gz application/${{ runner.os }}.app
+          $filePath = "application/${{ runner.os }}.tar.gz"
+          $fileSize = $(du -sm $filePath | cut -f1)
         }
-        git commit -m "${{ runner.os }}"
-        git diff --quiet && git diff --staged --quiet || git commit -m "${{ runner.os }}"
         
+        git lfs untrack $filePath
+        git rm --cached $filePath
+        if ($fileSize -gt 100) {
+          git lfs track $filePath
+        }
+        git add $filePath
+        git commit -m "${{ runner.os }}"
+        
+        git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $filePath" --prune-empty --tag-name-filter cat -- --all
+        git for-each-ref --format="%(refname)" refs/original/ | xargs -I {} git update-ref -d {}
+        git gc --prune=now
+        git gc --aggressive --prune=now
+
         git fetch origin main
         git merge origin/main -m "${{ runner.os }}"
         
         git pull --rebase origin main
         while($true) {
-          $pushOutput = git push https://github.com/hallvardnmbu/pagame.git main 2>&1
+          $pushOutput = git push https://github.com/hallvardnmbu/pagame.git main --force --all 2>&1
           if ($pushOutput -match "remote rejected") {
             Write-Output "Push rejected by remote repository, retrying in 5 seconds..."
             Start-Sleep -Seconds 5
@@ -101,6 +129,8 @@ jobs:
             break
           }
         }
+
+        git push origin --force --tags
       shell: pwsh
       env:
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

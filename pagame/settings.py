@@ -63,7 +63,7 @@ class Settings(QWidget):
 
         save = QPushButton("Update")
         save.setFixedHeight(int(BUTTON_SIZE * 0.5))
-        save.clicked.connect(lambda: self._credentials())
+        save.clicked.connect(self._credentials)
 
         _credentials.addLayout(id)
         _credentials.addLayout(secret)
