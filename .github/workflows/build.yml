@@ -56,9 +56,12 @@ jobs:
         GITHUB_ENV: ${{ github.env }}
 
     - name: Set up Python ${{ matrix.python-version }}
+      if: ${{ env.contains_build == 'true' }}
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
+      env:
+        GITHUB_ENV: ${{ github.env }}
 
     - name: Install dependencies
       if: ${{ env.contains_build == 'true' }}
@@ -84,10 +87,13 @@ jobs:
         GITHUB_ENV: ${{ github.env }}
 
     - name: Upload executable
+      if: ${{ env.contains_build == 'true' }}
       uses: actions/upload-artifact@v2
       with:
         name: ${{ runner.os }}
         path: application/
+      env:
+        GITHUB_ENV: ${{ github.env }}
 
     - name: Commit and push executable
       if: ${{ env.contains_build == 'true' }}
