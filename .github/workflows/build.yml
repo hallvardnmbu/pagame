@@ -112,7 +112,6 @@ jobs:
         git add $filePath
         git commit -m "${{ runner.os }}"
         
-#        git rebase origin/main
         git pull --rebase origin main
         
         while($true) {
