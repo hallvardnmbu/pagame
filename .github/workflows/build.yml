@@ -87,6 +87,8 @@ jobs:
         git config --global user.email "action@github.com"
         git config --global user.name "GitHub Action"
         
+        git fetch origin main
+        
         if ($env:RUNNER_OS -eq 'Windows') {
           $filePath = "application/${{ runner.os }}.exe"
           $fileSize = (Get-Item $filePath).length / 1MB
@@ -109,13 +111,12 @@ jobs:
         }
         git add $filePath
         git commit -m "${{ runner.os }}"
-
-        git fetch origin main
-        git merge origin/main -m "${{ runner.os }}"
         
+#        git rebase origin/main
         git pull --rebase origin main
+        
         while($true) {
-          $pushOutput = git push https://github.com/hallvardnmbu/pagame.git main --force --all 2>&1
+          $pushOutput = git push origin --force --all 2>&1
           if ($pushOutput -match "remote rejected") {
             Write-Output "Push rejected by remote repository, retrying in 5 seconds..."
             Start-Sleep -Seconds 5
