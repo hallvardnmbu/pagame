@@ -97,7 +97,7 @@ jobs:
 
       - name: Upload executable
         if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ runner.os }}
           path: application/
