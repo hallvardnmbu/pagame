@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths-ignore:
-      - 'application/**'
+      - "application/**"
 
 jobs:
   build:
@@ -19,132 +19,136 @@ jobs:
         python-version: [3.12]
 
     steps:
-    - uses: actions/checkout@v2
-      with:
-        fetch-depth: 0
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-    - name: Check commit messages for 'Build'
-      id: commit-message-check
-      run: |
-        $contains_build = git log --grep='Build' --format=%B -n 1
-        if ($contains_build -like "*Build*") {
-            echo "contains_build=true" >> $GITHUB_ENV
-        } else {
-            echo "contains_build=false" >> $GITHUB_ENV
-        }
-      shell: pwsh
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Create application directory
-      if: ${{ env.contains_build == 'true' }}
-      run: |
-        if ($env:RUNNER_OS -eq 'Windows') {
-          if (Test-Path application\${{ runner.os }}.exe) {
-            rmdir -Force -Recurse application\${{ runner.os }}.exe
-          }
-        } elseif ($env:RUNNER_OS -eq 'Linux') {
-          rm -rf application/${{ runner.os }}
-        } else {
-          rm -rf application/${{ runner.os }}.app
-        }
-        if (-not (Test-Path -Path application/)) {
-          New-Item -Path application/ -ItemType Directory
-        }
-      shell: pwsh
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Set up Python ${{ matrix.python-version }}
-      if: ${{ env.contains_build == 'true' }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Install dependencies
-      if: ${{ env.contains_build == 'true' }}
-      run: |
-        pip install pyinstaller pillow
-        pip install -r requirements.txt
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Build executable
-      if: ${{ env.contains_build == 'true' }}
-      run: |
-        pyinstaller executable.py -F -w -n ${{ runner.os }} --add-data "pagame/lookup/icons/*.png:." --add-data "pagame/lookup/textfiles/*.txt:." --icon "pagame/lookup/icons/icon.ico" --distpath dist -p pagame
-        if ($env:RUNNER_OS -eq 'Windows') {
-          mv dist/${{ runner.os }}.exe application/
-        } elseif ($env:RUNNER_OS -eq 'Linux') {
-          mv dist/${{ runner.os }} application/
-        } else {
-          mv dist/${{ runner.os }}.app application/
-        }
-      shell: pwsh
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Upload executable
-      if: ${{ env.contains_build == 'true' }}
-      uses: actions/upload-artifact@v2
-      with:
-        name: ${{ runner.os }}
-        path: application/
-      env:
-        GITHUB_ENV: ${{ github.env }}
-
-    - name: Commit and push executable
-      if: ${{ env.contains_build == 'true' }}
-      run: |
-        git config --global user.email "action@github.com"
-        git config --global user.name "GitHub Action"
-        
-        git fetch origin main
-        
-        if ($env:RUNNER_OS -eq 'Windows') {
-          $filePath = "application/${{ runner.os }}.exe"
-          $fileSize = (Get-Item $filePath).length / 1MB
-        } elseif ($env:RUNNER_OS -eq 'Linux') {
-          $filePath = "application/${{ runner.os }}"
-          $fileSize = $(du -sm $filePath | cut -f1)
-        } else {
-          tar -czf application/${{ runner.os }}.tar.gz application/${{ runner.os }}.app
-          $filePath = "application/${{ runner.os }}.tar.gz"
-          $fileSize = $(du -sm $filePath | cut -f1)
-        }
-        
-        git filter-branch --force --index-filter "git rm --cached --ignore-unmatch $filePath" --prune-empty --tag-name-filter cat -- --all
-        git for-each-ref --format="%(refname)" refs/original/ | xargs -I {} git update-ref -d {}
-        git gc --prune=now
-        git gc --aggressive --prune=now
-
-        if ($fileSize -gt 100) {
-          git lfs track $filePath
-        }
-        git add $filePath
-        git commit -m "${{ runner.os }}"
-
-        git pull --rebase origin main
-        
-        while($true) {
-          $pushOutput = git push origin --force --all 2>&1
-          if ($pushOutput -match "remote rejected") {
-            Write-Output "Push rejected by remote repository, retrying in 5 seconds..."
-            Start-Sleep -Seconds 5
-            git pull --rebase origin main
-          } elseif ($pushOutput -match "everything up-to-date") {
-            Write-Output "No changes to push, exiting loop..."
-            break
+      - name: Check commit messages for 'Build executable.'
+        id: commit-message-check
+        run: |
+          $contains_build = git log --grep='Build executable.' --format=%B -n 1
+          if ($contains_build -like "*Build executable.*") {
+              echo "contains_build=true" >> $env:GITHUB_OUTPUT
           } else {
-            Write-Output "Push successful, exiting loop..."
-            break
+              echo "contains_build=false" >> $env:GITHUB_OUTPUT
           }
-        }
+        shell: pwsh
+        env:
+          GITHUB_ENV: ${{ github.env }}
 
-        git push origin --force --tags
-      shell: pwsh
-      env:
-        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITHUB_ENV: ${{ github.env }}
+      - name: Purge application directory history
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        run: |
+          git filter-branch --force --index-filter "git rm --cached --ignore-unmatch application/**" --prune-empty --tag-name-filter cat -- --all
+          git for-each-ref --format="%(refname)" refs/original/ | xargs -I {} git update-ref -d {}
+          git gc --prune=now
+          git gc --aggressive --prune=now
+        shell: bash
+
+      - name: Create application directory
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        run: |
+          if ($env:RUNNER_OS -eq 'Windows') {
+            if (Test-Path application\${{ runner.os }}.exe) {
+              rmdir -Force -Recurse application\${{ runner.os }}.exe
+            }
+          } elseif ($env:RUNNER_OS -eq 'Linux') {
+            rm -rf application/${{ runner.os }}
+          } else {
+            rm -rf application/${{ runner.os }}.app
+          }
+          if (-not (Test-Path -Path application/)) {
+            New-Item -Path application/ -ItemType Directory
+          }
+        shell: pwsh
+        env:
+          GITHUB_ENV: ${{ github.env }}
+
+      - name: Set up Python ${{ matrix.python-version }}
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+        env:
+          GITHUB_ENV: ${{ github.env }}
+
+      - name: Install dependencies
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        run: |
+          pip install pyinstaller pillow
+          pip install -r requirements.txt
+        env:
+          GITHUB_ENV: ${{ github.env }}
+
+      - name: Build executable
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        run: |
+          pyinstaller executable.py -F -w -n ${{ runner.os }} --add-data "pagame/lookup/icons/*.png:." --add-data "pagame/lookup/textfiles/*.txt:." --icon "pagame/lookup/icons/icon.ico" --distpath dist -p pagame
+          if ($env:RUNNER_OS -eq 'Windows') {
+            mv dist/${{ runner.os }}.exe application/
+          } elseif ($env:RUNNER_OS -eq 'Linux') {
+            mv dist/${{ runner.os }} application/
+          } else {
+            mv dist/${{ runner.os }}.app application/
+          }
+        shell: pwsh
+        env:
+          GITHUB_ENV: ${{ github.env }}
+
+      - name: Upload executable
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ runner.os }}
+          path: application/
+        env:
+          GITHUB_ENV: ${{ github.env }}
+
+      - name: Commit and push executable
+        if: ${{ steps.commit-message-check.outputs.contains_build == 'true' }}
+        run: |
+          git config --global user.email "action@github.com"
+          git config --global user.name "GitHub Action"
+
+          git fetch origin main
+
+          if ($env:RUNNER_OS -eq 'Windows') {
+            $filePath = "application/${{ runner.os }}.exe"
+            $fileSize = (Get-Item $filePath).length / 1MB
+          } elseif ($env:RUNNER_OS -eq 'Linux') {
+            $filePath = "application/${{ runner.os }}"
+            $fileSize = $(du -sm $filePath | cut -f1)
+          } else {
+            tar -czf application/${{ runner.os }}.tar.gz application/${{ runner.os }}.app
+            $filePath = "application/${{ runner.os }}.tar.gz"
+            $fileSize = $(du -sm $filePath | cut -f1)
+          }
+
+          if ($fileSize -gt 100) {
+            git lfs track $filePath
+          }
+          git add $filePath
+          git commit -m "${{ runner.os }}"
+
+          git pull --rebase origin main
+
+          while($true) {
+            $pushOutput = git push origin --force --all 2>&1
+            if ($pushOutput -match "remote rejected") {
+              Write-Output "Push rejected by remote repository, retrying in 5 seconds..."
+              Start-Sleep -Seconds 5
+              git pull --rebase origin main
+            } elseif ($pushOutput -match "everything up-to-date") {
+              Write-Output "No changes to push, exiting loop..."
+              break
+            } else {
+              Write-Output "Push successful, exiting loop..."
+              break
+            }
+          }
+
+          git push origin --force --tags
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ENV: ${{ github.env }}
